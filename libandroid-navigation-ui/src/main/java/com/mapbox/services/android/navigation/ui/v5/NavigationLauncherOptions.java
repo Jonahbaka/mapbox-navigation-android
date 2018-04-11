@@ -40,6 +40,8 @@ public abstract class NavigationLauncherOptions extends NavigationOptions {
 
     public abstract Builder shouldSimulateRoute(boolean shouldSimulateRoute);
 
+    public abstract Builder waynameChipEnabled(boolean waynameChipEnabled);
+
     public abstract Builder locale(Locale locale);
 
     public abstract Builder unitType(@NavigationUnitType.UnitType Integer unitType);
@@ -55,6 +57,7 @@ public abstract class NavigationLauncherOptions extends NavigationOptions {
     return new AutoValue_NavigationLauncherOptions.Builder()
       .shouldSimulateRoute(false)
       .enableOffRouteDetection(true)
-      .snapToRoute(true);
+      .snapToRoute(true)
+      .waynameChipEnabled(true);
   }
 }

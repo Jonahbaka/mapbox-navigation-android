@@ -17,9 +17,9 @@ import com.mapbox.services.android.navigation.ui.v5.instruction.BannerInstructio
 import com.mapbox.services.android.navigation.ui.v5.instruction.InstructionModel;
 import com.mapbox.services.android.navigation.ui.v5.location.LocationEngineConductor;
 import com.mapbox.services.android.navigation.ui.v5.location.LocationEngineConductorListener;
+import com.mapbox.services.android.navigation.ui.v5.route.OffRouteEvent;
 import com.mapbox.services.android.navigation.ui.v5.route.ViewRouteFetcher;
 import com.mapbox.services.android.navigation.ui.v5.route.ViewRouteListener;
-import com.mapbox.services.android.navigation.ui.v5.route.OffRouteEvent;
 import com.mapbox.services.android.navigation.ui.v5.summary.SummaryModel;
 import com.mapbox.services.android.navigation.ui.v5.voice.NavigationInstructionPlayer;
 import com.mapbox.services.android.navigation.v5.milestone.BannerInstructionMilestone;
@@ -158,7 +158,7 @@ public class NavigationViewModel extends AndroidViewModel {
    *
    * @param options to init MapboxNavigation
    */
-  void initializeNavigation(NavigationViewOptions options) {
+  MapboxNavigation initializeNavigation(NavigationViewOptions options) {
     MapboxNavigationOptions navigationOptions = options.navigationOptions();
     navigationOptions = navigationOptions.toBuilder().isFromNavigationUi(true).build();
     initLocaleInfo(navigationOptions);
@@ -169,6 +169,7 @@ public class NavigationViewModel extends AndroidViewModel {
       initNavigation(getApplication(), navigationOptions);
       navigationViewRouteEngine.extractRouteOptions(getApplication(), options);
     }
+    return navigation;
   }
 
   void updateNavigation(NavigationViewOptions options) {
