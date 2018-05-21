@@ -218,7 +218,7 @@ public class MapboxNavigation implements ServiceConnection {
    */
   public void onDestroy() {
     Timber.d("MapboxNavigation onDestroy.");
-    endNavigation();
+    stopNavigation();
     disableLocationEngine();
     removeNavigationEventListener(null);
     removeProgressChangeListener(null);
@@ -427,8 +427,8 @@ public class MapboxNavigation implements ServiceConnection {
    *
    * @since 0.1.0
    */
-  public void endNavigation() {
-    Timber.d("MapboxNavigation endNavigation called");
+  public void stopNavigation() {
+    Timber.d("MapboxNavigation stopNavigation called");
     if (isServiceAvailable()) {
       navigationService.stopSelf();
       context.unbindService(this);
