@@ -10,12 +10,16 @@ import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.services.android.navigation.v5.navigation.MapboxNavigation;
 import com.mapbox.services.android.navigation.v5.navigation.camera.Camera;
 import com.mapbox.services.android.navigation.v5.navigation.camera.RouteInformation;
 import com.mapbox.services.android.navigation.v5.routeprogress.ProgressChangeListener;
 import com.mapbox.services.android.navigation.v5.routeprogress.RouteProgress;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Updates the map camera while navigating.
@@ -32,11 +36,13 @@ public class NavigationCamera {
   private MapboxMap mapboxMap;
   private MapboxNavigation navigation;
   private RouteInformation currentRouteInformation;
+  private RouteProgress currentRouteProgress;
   private boolean trackingEnabled = true;
   private long locationUpdateTimestamp;
   private ProgressChangeListener progressChangeListener = new ProgressChangeListener() {
     @Override
     public void onProgressChange(Location location, RouteProgress routeProgress) {
+      currentRouteProgress = routeProgress;
       if (trackingEnabled) {
         currentRouteInformation = buildRouteInformationFromLocation(location, routeProgress);
         animateCameraFromLocation(currentRouteInformation);
@@ -131,13 +137,19 @@ public class NavigationCamera {
    * @since 0.6.0
    */
   public void resetCameraPosition() {
-    this.trackingEnabled = true;
+    trackingEnabled = true;
     if (currentRouteInformation != null) {
       if (navigation.getCameraEngine() instanceof DynamicCamera) {
         ((DynamicCamera) navigation.getCameraEngine()).forceResetZoomLevel();
       }
       animateCameraFromLocation(currentRouteInformation);
     }
+  }
+
+  public void showRouteOverview(int[] padding) {
+    trackingEnabled = false;
+    RouteInformation routeInformation = buildRouteInformationFromRouteProgress(currentRouteProgress);
+    animateCameraForRouteOverview(routeInformation, padding);
   }
 
   /**
@@ -181,6 +193,14 @@ public class NavigationCamera {
   @NonNull
   private RouteInformation buildRouteInformationFromLocation(Location location, RouteProgress routeProgress) {
     return RouteInformation.create(null, location, routeProgress);
+  }
+
+  @NonNull
+  private RouteInformation buildRouteInformationFromRouteProgress(RouteProgress routeProgress) {
+    if (routeProgress != null) {
+      return RouteInformation.create(routeProgress.directionsRoute(), null, null);
+    }
+    return RouteInformation.create(null, null, null);
   }
 
   /**
@@ -240,6 +260,27 @@ public class NavigationCamera {
         navigation.addProgressChangeListener(progressChangeListener);
       }
     });
+  }
+
+  private void animateCameraForRouteOverview(RouteInformation routeInformation, int[] padding) {
+
+    Camera cameraEngine = navigation.getCameraEngine();
+
+    List<Point> routePoints = cameraEngine.overview(routeInformation);
+    LatLngBounds routeBounds = convertRoutePointsToLatLngBounds(routePoints);
+    CameraPosition position = mapboxMap.getCameraForLatLngBounds(routeBounds, padding);
+
+    easeMapCameraPosition(position);
+  }
+
+  private LatLngBounds convertRoutePointsToLatLngBounds(List<Point> routePoints) {
+    List<LatLng> latLngs = new ArrayList<>();
+    for (Point routePoint : routePoints) {
+      latLngs.add(new LatLng(routePoint.latitude(), routePoint.longitude()));
+    }
+    return new LatLngBounds.Builder()
+      .includes(latLngs)
+      .build();
   }
 
   /**
