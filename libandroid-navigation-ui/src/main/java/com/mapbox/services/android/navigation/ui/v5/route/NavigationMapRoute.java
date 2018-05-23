@@ -53,8 +53,10 @@ import static com.mapbox.mapboxsdk.style.expressions.Expression.color;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.interpolate;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.linear;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.match;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.product;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.stop;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.zoom;
 import static com.mapbox.mapboxsdk.style.layers.Property.ICON_ROTATION_ALIGNMENT_MAP;
@@ -105,13 +107,13 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
   private static final String ARROW_ICON = "mapbox-navigation-arrow-icon";
   private static final String ARROW_ICON_CASING = "mapbox-navigation-arrow-icon-casing";
   private static final int MAX_DEGREES = 360;
-  private static final float SHAFT_CASING_LINE_WIDTH = 8.5f;
-  private static final float SHAFT_LINE_WIDTH = 6.25f;
+  private static final float SHAFT_CASING_LINE_WIDTH_FACTOR = 8.5f / 5;
+  private static final float SHAFT_LINE_WIDTH_FACTOR = 6.25f / 5;
   private static final String ARROW_CASING_LAYER_ID = "mapbox-navigation-arrow-casing-layer";
-  private static final float ARROW_CASING_SIZE = 1.75f;
+  private static final float ARROW_CASING_SIZE_FACTOR = 1.75f / 5;
   private static final Float[] ARROW_CASING_OFFSET = {0f, -1f};
   private static final String ARROW_LAYER_ID = "mapbox-navigation-arrow-layer";
-  private static final float ARROW_SIZE = 1.25f;
+  private static final float ARROW_SIZE_FACTOR = 1.25f / 5;
   private static final Float[] ARROW_OFFSET = {0f, -1.25f};
 
   @StyleRes
@@ -511,7 +513,15 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
   private LineLayer createShaftLayer() {
     return new LineLayer(SHAFT_LINE_LAYER_ID, SHAFT_SOURCE_ID).withProperties(
       PropertyFactory.lineColor(Color.parseColor(WHITE_HEX)),
-      PropertyFactory.lineWidth(SHAFT_LINE_WIDTH),
+      PropertyFactory.lineWidth(
+        interpolate(linear(), zoom(),
+          stop(10, product(SHAFT_LINE_WIDTH_FACTOR, 1)),
+          stop(13, product(SHAFT_LINE_WIDTH_FACTOR, 2)),
+          stop(16, product(SHAFT_LINE_WIDTH_FACTOR, 3)),
+          stop(19, product(SHAFT_LINE_WIDTH_FACTOR, 4)),
+          stop(22, product(SHAFT_LINE_WIDTH_FACTOR, 5))
+        )
+      ),
       PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
       PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
       PropertyFactory.visibility(NONE)
@@ -521,7 +531,15 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
   private LineLayer createShaftCasingLayer() {
     return new LineLayer(SHAFT_CASING_LINE_LAYER_ID, SHAFT_SOURCE_ID).withProperties(
       PropertyFactory.lineColor(Color.parseColor(DARK_BLUE_GRAY_HEX)),
-      PropertyFactory.lineWidth(SHAFT_CASING_LINE_WIDTH),
+      PropertyFactory.lineWidth(
+        interpolate(linear(), zoom(),
+          stop(10, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 1)),
+          stop(13, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 2)),
+          stop(16, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 3)),
+          stop(19, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 4)),
+          stop(22, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 5))
+        )
+      ),
       PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
       PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
       PropertyFactory.visibility(NONE)
@@ -534,7 +552,14 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
         PropertyFactory.iconImage(ARROW_ICON),
         iconAllowOverlap(true),
         iconIgnorePlacement(true),
-        PropertyFactory.iconSize(ARROW_SIZE),
+        PropertyFactory.iconSize(interpolate(linear(), zoom(),
+          stop(10, product(ARROW_SIZE_FACTOR, 1)),
+          stop(13, product(ARROW_SIZE_FACTOR, 2)),
+          stop(16, product(ARROW_SIZE_FACTOR, 3)),
+          stop(19, product(ARROW_SIZE_FACTOR, 4)),
+          stop(22, product(ARROW_SIZE_FACTOR, 5))
+          )
+        ),
         PropertyFactory.iconOffset(ARROW_OFFSET),
         PropertyFactory.iconRotationAlignment(ICON_ROTATION_ALIGNMENT_MAP),
         PropertyFactory.iconRotate(get(BEARING_ARROW)),
@@ -547,7 +572,14 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
       PropertyFactory.iconImage(ARROW_ICON_CASING),
       iconAllowOverlap(true),
       iconIgnorePlacement(true),
-      PropertyFactory.iconSize(ARROW_CASING_SIZE),
+      PropertyFactory.iconSize(interpolate(
+        linear(), zoom(),
+        stop(10, product(ARROW_CASING_SIZE_FACTOR, 1)),
+        stop(13, product(ARROW_CASING_SIZE_FACTOR, 2)),
+        stop(16, product(ARROW_CASING_SIZE_FACTOR, 3)),
+        stop(19, product(ARROW_CASING_SIZE_FACTOR, 4)),
+        stop(22, product(ARROW_CASING_SIZE_FACTOR, 5))
+      )),
       PropertyFactory.iconOffset(ARROW_CASING_OFFSET),
       PropertyFactory.iconRotationAlignment(ICON_ROTATION_ALIGNMENT_MAP),
       PropertyFactory.iconRotate(get(BEARING_ARROW)),
