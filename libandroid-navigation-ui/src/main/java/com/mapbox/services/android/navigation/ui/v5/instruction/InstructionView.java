@@ -119,7 +119,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
 
   public InstructionView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
-    init();
+    initialize();
   }
 
   /**
@@ -132,10 +132,10 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
   protected void onFinishInflate() {
     super.onFinishInflate();
     bind();
-    initBackground();
-    initTurnLaneRecyclerView();
-    initDirectionsRecyclerView();
-    initAnimations();
+    initializeBackground();
+    initializeTurnLaneRecyclerView();
+    initializeDirectionsRecyclerView();
+    initializeAnimations();
   }
 
   @Override
@@ -177,8 +177,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
       @Override
       public void onChanged(@Nullable InstructionModel model) {
         if (model != null) {
-          updateViews(model);
-          updateTextInstruction(model);
+          updateInstructionData(model);
         }
       }
     });
@@ -186,7 +185,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
       @Override
       public void onChanged(@Nullable BannerInstructionModel bannerInstructionModel) {
         if (bannerInstructionModel != null) {
-          updateTextInstruction(bannerInstructionModel);
+          updateBannerData(bannerInstructionModel);
         }
       }
     });
@@ -205,9 +204,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
         }
       }
     });
-
-    // ViewModel set - click listeners can be set now
-    initClickListeners();
+    initializeClickListeners();
   }
 
   /**
@@ -221,19 +218,17 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
   public void update(RouteProgress routeProgress) {
     if (routeProgress != null && !isRerouting) {
       InstructionModel model = new InstructionModel(getContext(), routeProgress, locale, unitType);
-      updateViews(model);
-      updateTextInstruction(model);
+      updateInstructionData(model);
+      updateBannerData(model);
     }
   }
 
-  private void updateViews(InstructionModel model) {
-    updateManeuverView(model);
+  private void updateInstructionData(InstructionModel model) {
     updateDistanceText(model);
     updateInstructionList(model);
     updateTurnLanes(model);
     updateThenStep(model);
     if (newStep(model.getProgress())) {
-      // Pre-fetch the image URLs for the upcoming step
       LegStep upComingStep = model.getProgress().currentLegProgress().upComingStep();
       ImageCoordinator.getInstance().prefetchImageCache(upComingStep);
     }
@@ -348,7 +343,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
   /**
    * Inflates this layout needed for this view and initializes the locale as the device locale.
    */
-  private void init() {
+  private void initialize() {
     locale = LocaleUtils.getDeviceLocale(getContext());
     inflate(getContext(), R.layout.instruction_view_layout, this);
   }
@@ -375,14 +370,14 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
     instructionLayoutText = findViewById(R.id.instructionLayoutText);
     instructionListLayout = findViewById(R.id.instructionListLayout);
     rvInstructions = findViewById(R.id.rvInstructions);
-    initInstructionAutoSize();
+    initializeInstructionAutoSize();
   }
 
   /**
    * For API 21 and lower, manually set the drawable tint based on the colors
    * set in the given navigation theme (light or dark).
    */
-  private void initBackground() {
+  private void initializeBackground() {
     if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.LOLLIPOP) {
       int navigationViewPrimaryColor = ThemeSwitcher.retrieveNavigationViewThemeColor(getContext(),
         R.attr.navigationViewPrimary);
@@ -498,19 +493,17 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
    * Called after we bind the views, this will allow the step instruction {@link TextView}
    * to automatically re-size based on the length of the text.
    */
-  private void initInstructionAutoSize() {
+  private void initializeInstructionAutoSize() {
     TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(upcomingPrimaryText,
       26, 30, 1, TypedValue.COMPLEX_UNIT_SP);
     TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(upcomingSecondaryText,
       20, 26, 1, TypedValue.COMPLEX_UNIT_SP);
-    TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(upcomingDistanceText,
-      16, 20, 1, TypedValue.COMPLEX_UNIT_SP);
   }
 
   /**
    * Sets up the {@link RecyclerView} that is used to display the turn lanes.
    */
-  private void initTurnLaneRecyclerView() {
+  private void initializeTurnLaneRecyclerView() {
     turnLaneAdapter = new TurnLaneAdapter();
     rvTurnLanes.setAdapter(turnLaneAdapter);
     rvTurnLanes.setHasFixedSize(true);
@@ -521,7 +514,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
   /**
    * Sets up the {@link RecyclerView} that is used to display the list of instructions.
    */
-  private void initDirectionsRecyclerView() {
+  private void initializeDirectionsRecyclerView() {
     instructionListAdapter = new InstructionListAdapter();
     rvInstructions.setAdapter(instructionListAdapter);
     rvInstructions.setHasFixedSize(true);
@@ -532,7 +525,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
   /**
    * Initializes all animations needed to show / hide views.
    */
-  private void initAnimations() {
+  private void initializeAnimations() {
     Context context = getContext();
     rerouteSlideDownTop = AnimationUtils.loadAnimation(context, R.anim.slide_down_top);
     rerouteSlideUpTop = AnimationUtils.loadAnimation(context, R.anim.slide_up_top);
@@ -559,11 +552,11 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
     }
   }
 
-  private void initClickListeners() {
+  private void initializeClickListeners() {
     if (getContext().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-      initLandscapeListListener();
+      initializeLandscapeListListener();
     } else {
-      initPortraitListListener();
+      initializePortraitListListener();
     }
     alertView.setOnClickListener(new View.OnClickListener() {
       @Override
@@ -594,7 +587,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
    * For portrait orientation, attach the listener to the whole layout
    * and use custom animations to hide and show the instructions /sound layout
    */
-  private void initPortraitListListener() {
+  private void initializePortraitListListener() {
     instructionLayout.setOnClickListener(new OnClickListener() {
       @Override
       public void onClick(View instructionView) {
@@ -612,7 +605,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
    * For landscape orientation, the click listener is attached to
    * the instruction text layout and the constraints are adjusted before animating
    */
-  private void initLandscapeListListener() {
+  private void initializeLandscapeListListener() {
     instructionLayoutText.setOnClickListener(new OnClickListener() {
       @Override
       public void onClick(View instructionLayoutText) {
@@ -633,8 +626,8 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
    * @param model provides maneuver modifier / type
    */
   private void updateManeuverView(InstructionModel model) {
-    String maneuverViewType = model.getStepResources().getManeuverViewType();
-    String maneuverViewModifier = model.getStepResources().getManeuverViewModifier();
+    String maneuverViewType = model.getManeuverType();
+    String maneuverViewModifier = model.getManeuverModifier();
     upcomingManeuverView.setManeuverTypeAndModifier(maneuverViewType, maneuverViewModifier);
     if (model.getRoundaboutAngle() != null) {
       upcomingManeuverView.setRoundaboutAngle(model.getRoundaboutAngle());
@@ -682,7 +675,8 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
    *
    * @param model provides instruction text
    */
-  private void updateTextInstruction(InstructionModel model) {
+  private void updateBannerData(InstructionModel model) {
+    updateManeuverView(model);
     if (model.getPrimaryBannerText() != null) {
       createInstructionLoader(upcomingPrimaryText, model.getPrimaryBannerText()).loadInstruction();
     }
@@ -732,7 +726,7 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
    */
   private void updateTurnLanes(InstructionModel model) {
     List<IntersectionLanes> turnLanes = model.getStepResources().getTurnLanes();
-    String maneuverViewModifier = model.getStepResources().getManeuverViewModifier();
+    String maneuverViewModifier = model.getManeuverModifier();
     double durationRemaining = model.getProgress().currentLegProgress().currentStepProgress().durationRemaining();
 
     if (shouldShowTurnLanes(turnLanes, maneuverViewModifier, durationRemaining)) {

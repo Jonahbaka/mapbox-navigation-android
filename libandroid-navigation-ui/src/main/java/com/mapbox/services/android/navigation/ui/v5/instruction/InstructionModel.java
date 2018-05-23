@@ -54,6 +54,14 @@ public class InstructionModel {
     return stepResources;
   }
 
+  String getManeuverType() {
+    return stepResources.getManeuverViewType();
+  }
+
+  String getManeuverModifier() {
+    return stepResources.getManeuverViewModifier();
+  }
+
   RouteProgress getProgress() {
     return progress;
   }

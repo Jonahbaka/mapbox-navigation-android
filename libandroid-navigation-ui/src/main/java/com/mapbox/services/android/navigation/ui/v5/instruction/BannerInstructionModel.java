@@ -11,21 +11,33 @@ import java.util.Locale;
 
 public class BannerInstructionModel extends InstructionModel {
 
-  private BannerInstructionMilestone milestone;
+  private BannerText primaryBannerText;
+  private BannerText secondaryBannerText;
 
   public BannerInstructionModel(Context context, BannerInstructionMilestone milestone,
                                 RouteProgress progress, Locale locale, @NavigationUnitType.UnitType int unitType) {
     super(context, progress, locale, unitType);
-    this.milestone = milestone;
+    primaryBannerText = milestone.getBannerInstructions().primary();
+    secondaryBannerText = milestone.getBannerInstructions().secondary();
   }
 
   @Override
   BannerText getPrimaryBannerText() {
-    return milestone.getBannerInstructions().primary();
+    return primaryBannerText;
   }
 
   @Override
   BannerText getSecondaryBannerText() {
-    return milestone.getBannerInstructions().secondary();
+    return secondaryBannerText;
+  }
+
+  @Override
+  String getManeuverType() {
+    return primaryBannerText.type();
+  }
+
+  @Override
+  String getManeuverModifier() {
+    return primaryBannerText.modifier();
   }
 }
