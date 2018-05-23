@@ -520,8 +520,15 @@ public class NavigationView extends CoordinatorLayout implements LifecycleObserv
     cancelBtn.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        navigationPresenter.onCancelBtnClick();
-        navigationViewEventDispatcher.onCancelNavigation();
+//        navigationPresenter.onCancelBtnClick();
+//        navigationViewEventDispatcher.onCancelNavigation();
+        map.setPadding(0, 0, 0, 0);
+        int topBottomPadding = (int) ViewUtils.dpToPx(getContext(), 75);
+        int paddingBuffer = (int) ViewUtils.dpToPx(getContext(), 25);
+        int measuredHeight = instructionView.retrieveInstructionBannerHeight() + paddingBuffer;
+        int measuredHeightTwo = summaryBottomSheet.getMeasuredHeight() + paddingBuffer;
+        int[] padding = {topBottomPadding, measuredHeight, topBottomPadding, measuredHeightTwo};
+        camera.showRouteOverview(padding);
       }
     });
     recenterBtn.setOnClickListener(new View.OnClickListener() {

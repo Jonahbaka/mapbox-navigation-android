@@ -327,6 +327,10 @@ public class InstructionView extends RelativeLayout implements FeedbackBottomShe
     rvInstructions.smoothScrollToPosition(TOP);
   }
 
+  public int retrieveInstructionBannerHeight() {
+    return instructionLayout.getMeasuredHeight();
+  }
+
   /**
    * Sets the locale to use for languages and default unit type
    *

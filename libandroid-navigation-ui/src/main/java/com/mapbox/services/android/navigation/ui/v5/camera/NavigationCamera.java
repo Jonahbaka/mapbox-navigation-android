@@ -8,6 +8,7 @@ import android.support.v4.app.FragmentActivity;
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
+import com.mapbox.mapboxsdk.camera.CameraUpdate;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
@@ -263,14 +264,28 @@ public class NavigationCamera {
   }
 
   private void animateCameraForRouteOverview(RouteInformation routeInformation, int[] padding) {
-
     Camera cameraEngine = navigation.getCameraEngine();
 
-    List<Point> routePoints = cameraEngine.overview(routeInformation);
-    LatLngBounds routeBounds = convertRoutePointsToLatLngBounds(routePoints);
-    CameraPosition position = mapboxMap.getCameraForLatLngBounds(routeBounds, padding);
+    CameraPosition resetPosition = new CameraPosition.Builder().tilt(0).bearing(0).build();
+    CameraUpdate resetUpdate = CameraUpdateFactory.newCameraPosition(resetPosition);
 
-    easeMapCameraPosition(position);
+    List<Point> routePoints = cameraEngine.overview(routeInformation);
+    final LatLngBounds routeBounds = convertRoutePointsToLatLngBounds(routePoints);
+    final CameraUpdate overviewUpdate = CameraUpdateFactory.newLatLngBounds(
+      routeBounds, padding[0], padding[1], padding[2], padding[3]
+    );
+
+    mapboxMap.animateCamera(resetUpdate, 150, new MapboxMap.CancelableCallback() {
+      @Override
+      public void onCancel() {
+        // No-op
+      }
+
+      @Override
+      public void onFinish() {
+        mapboxMap.animateCamera(overviewUpdate, 750);
+      }
+    });
   }
 
   private LatLngBounds convertRoutePointsToLatLngBounds(List<Point> routePoints) {
