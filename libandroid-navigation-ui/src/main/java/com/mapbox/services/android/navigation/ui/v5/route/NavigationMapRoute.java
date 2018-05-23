@@ -3,7 +3,6 @@ package com.mapbox.services.android.navigation.ui.v5.route;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.support.annotation.ColorInt;
@@ -13,6 +12,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.Size;
 import android.support.annotation.StyleRes;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
 import com.mapbox.api.directions.v5.models.RouteLeg;
@@ -97,24 +97,22 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
   private static final String GENERIC_ROUTE_SHIELD_LAYER_ID = "mapbox-navigation-route-shield-layer";
   private static final int TWO_MANEUVERS = 2;
   private static final int THIRTY = 30;
-  private static final String BEARING_ARROW = "mapbox-navigation-bearing-arrow";
-  private static final String SHAFT_SOURCE_ID = "mapbox-navigation-shaft-source";
-  private static final String ARROW_SOURCE_ID = "mapbox-navigation-arrow-source";
-  private static final String DARK_BLUE_GRAY_HEX = "#2D3F53";
-  private static final String WHITE_HEX = "#FFFFFF";
-  private static final String SHAFT_CASING_LINE_LAYER_ID = "mapbox-navigation-shaft-casing-layer";
-  private static final String SHAFT_LINE_LAYER_ID = "mapbox-navigation-shaft-layer";
-  private static final String ARROW_ICON = "mapbox-navigation-arrow-icon";
-  private static final String ARROW_ICON_CASING = "mapbox-navigation-arrow-icon-casing";
+  private static final String ARROW_BEARING = "mapbox-navigation-arrow-bearing";
+  private static final String ARROW_SHAFT_SOURCE_ID = "mapbox-navigation-arrow-shaft-source";
+  private static final String ARROW_HEAD_SOURCE_ID = "mapbox-navigation-arrow-head-source";
+  private static final String ARROW_SHAFT_CASING_LINE_LAYER_ID = "mapbox-navigation-arrow-shaft-casing-layer";
+  private static final String ARROW_SHAFT_LINE_LAYER_ID = "mapbox-navigation-arrow-shaft-layer";
+  private static final String ARROW_HEAD_ICON = "mapbox-navigation-arrow-head-icon";
+  private static final String ARROW_HEAD_ICON_CASING = "mapbox-navigation-arrow-head-icon-casing";
   private static final int MAX_DEGREES = 360;
-  private static final float SHAFT_CASING_LINE_WIDTH_FACTOR = 8.5f / 5;
-  private static final float SHAFT_LINE_WIDTH_FACTOR = 6.25f / 5;
-  private static final String ARROW_CASING_LAYER_ID = "mapbox-navigation-arrow-casing-layer";
-  private static final float ARROW_CASING_SIZE_FACTOR = 1.75f / 5;
-  private static final Float[] ARROW_CASING_OFFSET = {0f, -1f};
-  private static final String ARROW_LAYER_ID = "mapbox-navigation-arrow-layer";
-  private static final float ARROW_SIZE_FACTOR = 1.25f / 5;
-  private static final Float[] ARROW_OFFSET = {0f, -1.25f};
+  private static final float ARROW_SHAFT_CASING_LINE_WIDTH_FACTOR = 8.5f / 5;
+  private static final float ARROW_SHAFT_LINE_WIDTH_FACTOR = 6.25f / 5;
+  private static final String ARROW_HEAD_CASING_LAYER_ID = "mapbox-navigation-arrow-head-casing-layer";
+  private static final float ARROW_HEAD_CASING_SIZE_FACTOR = 1.75f / 5;
+  private static final Float[] ARROW_HEAD_CASING_OFFSET = {0f, -1f};
+  private static final String ARROW_HEAD_LAYER_ID = "mapbox-navigation-arrow-head-layer";
+  private static final float ARROW_HEAD_SIZE_FACTOR = 1.25f / 5;
+  private static final Float[] ARROW_HEAD_OFFSET = {0f, -1.25f};
 
   @StyleRes
   private int styleRes;
@@ -134,6 +132,10 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
   private int alternativeRouteShieldColor;
   @ColorInt
   private int routeShieldColor;
+  @ColorInt
+  private int arrowColor;
+  @ColorInt
+  private int arrowBorderColor;
   @DrawableRes
   private int originWaypointIcon;
   @DrawableRes
@@ -153,10 +155,10 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
   private boolean alternativesVisible;
   private OnRouteSelectionChangeListener onRouteSelectionChangeListener;
   private List<Layer> arrowLayers;
-  private GeoJsonSource shaftGeoJsonSource;
-  private GeoJsonSource arrowGeoJsonSource;
-  private Feature shaftGeoJsonFeature = Feature.fromGeometry(Point.fromLngLat(0, 0));
-  private Feature arrowGeoJsonFeature = Feature.fromGeometry(Point.fromLngLat(0, 0));
+  private GeoJsonSource arrowShaftGeoJsonSource;
+  private GeoJsonSource arrowHeadGeoJsonSource;
+  private Feature arrowShaftGeoJsonFeature = Feature.fromGeometry(Point.fromLngLat(0, 0));
+  private Feature arrowHeadGeoJsonFeature = Feature.fromGeometry(Point.fromLngLat(0, 0));
 
   /**
    * Construct an instance of {@link NavigationMapRoute}.
@@ -413,8 +415,8 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
 
     List<Point> maneuverPoints = obtainArrowPointsFrom(routeProgress);
 
-    updateShaftWith(maneuverPoints);
-    updateArrowWith(maneuverPoints);
+    updateArrowShaftWith(maneuverPoints);
+    updateArrowHeadWith(maneuverPoints);
   }
 
   private void updateArrowLayersVisibilityTo(boolean visible) {
@@ -444,82 +446,85 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
     return combined;
   }
 
-  private void updateShaftWith(List<Point> points) {
+  private void updateArrowShaftWith(List<Point> points) {
     LineString shaft = LineString.fromLngLats(points);
-    shaftGeoJsonFeature = Feature.fromGeometry(shaft);
-    shaftGeoJsonSource.setGeoJson(shaftGeoJsonFeature);
+    arrowShaftGeoJsonFeature = Feature.fromGeometry(shaft);
+    arrowShaftGeoJsonSource.setGeoJson(arrowShaftGeoJsonFeature);
   }
 
-  private void updateArrowWith(List<Point> points) {
+  private void updateArrowHeadWith(List<Point> points) {
     double azimuth = TurfMeasurement.bearing(points.get(points.size() - 2), points.get(points.size() - 1));
-    arrowGeoJsonFeature = Feature.fromGeometry(points.get(points.size() - 1));
-    arrowGeoJsonFeature.addNumberProperty(BEARING_ARROW, (float) MathUtils.wrap(azimuth, 0, MAX_DEGREES));
-    arrowGeoJsonSource.setGeoJson(arrowGeoJsonFeature);
+    arrowHeadGeoJsonFeature = Feature.fromGeometry(points.get(points.size() - 1));
+    arrowHeadGeoJsonFeature.addNumberProperty(ARROW_BEARING, (float) MathUtils.wrap(azimuth, 0, MAX_DEGREES));
+    arrowHeadGeoJsonSource.setGeoJson(arrowHeadGeoJsonFeature);
   }
 
   private void initializeUpcomingManeuverArrow() {
-    if (shaftGeoJsonSource == null && arrowGeoJsonSource == null) {
-      initializeShaft();
-      initializeArrow();
+    if (arrowShaftGeoJsonSource == null && arrowHeadGeoJsonSource == null) {
+      initializeArrowShaft();
+      initializeArrowHead();
 
-      addArrowIcon();
-      addArrowIconCasing();
+      addArrowHeadIcon();
+      addArrowHeadIconCasing();
 
-      LineLayer shaftLayer = createShaftLayer();
-      LineLayer shaftCasingLayer = createShaftCasingLayer();
-      SymbolLayer arrowLayer = createArrowLayer();
-      SymbolLayer arrowCasingLayer = createArrowCasingLayer();
+      LineLayer shaftLayer = createArrowShaftLayer();
+      LineLayer shaftCasingLayer = createArrowShaftCasingLayer();
+      SymbolLayer headLayer = createArrowHeadLayer();
+      SymbolLayer headCasingLayer = createArrowHeadCasingLayer();
 
       mapboxMap.addLayer(shaftLayer);
-      mapboxMap.addLayer(arrowLayer);
+      mapboxMap.addLayer(headLayer);
 
       mapboxMap.addLayerBelow(shaftCasingLayer, shaftLayer.getId());
-      mapboxMap.addLayerBelow(arrowCasingLayer, shaftCasingLayer.getId());
+      mapboxMap.addLayerBelow(headCasingLayer, shaftCasingLayer.getId());
 
-      initializeArrowLayers(shaftLayer, shaftCasingLayer, arrowLayer, arrowCasingLayer);
+      initializeArrowLayers(shaftLayer, shaftCasingLayer, headLayer, headCasingLayer);
     }
   }
 
-  private void initializeShaft() {
-    shaftGeoJsonSource = new GeoJsonSource(
-      SHAFT_SOURCE_ID,
-      shaftGeoJsonFeature,
+  private void initializeArrowShaft() {
+    arrowShaftGeoJsonSource = new GeoJsonSource(
+      ARROW_SHAFT_SOURCE_ID,
+      arrowShaftGeoJsonFeature,
       new GeoJsonOptions().withMaxZoom(16)
     );
-    mapboxMap.addSource(shaftGeoJsonSource);
+    mapboxMap.addSource(arrowShaftGeoJsonSource);
   }
 
-  private void initializeArrow() {
-    arrowGeoJsonSource = new GeoJsonSource(
-      ARROW_SOURCE_ID,
-      shaftGeoJsonFeature,
+  private void initializeArrowHead() {
+    arrowHeadGeoJsonSource = new GeoJsonSource(
+      ARROW_HEAD_SOURCE_ID,
+      arrowShaftGeoJsonFeature,
       new GeoJsonOptions().withMaxZoom(16)
     );
-    mapboxMap.addSource(arrowGeoJsonSource);
+    mapboxMap.addSource(arrowHeadGeoJsonSource);
   }
 
-  private void addArrowIcon() {
-    Bitmap arrowIcon = MapImageUtils.getBitmapFromDrawable(ContextCompat.getDrawable(mapView.getContext(),
-      R.drawable.ic_arrow));
-    mapboxMap.addImage(ARROW_ICON, arrowIcon);
+  private void addArrowHeadIcon() {
+    Drawable head = DrawableCompat.wrap(ContextCompat.getDrawable(mapView.getContext(), R.drawable.ic_arrow_head));
+    DrawableCompat.setTint(head.mutate(), arrowColor);
+    Bitmap icon = MapImageUtils.getBitmapFromDrawable(head);
+    mapboxMap.addImage(ARROW_HEAD_ICON, icon);
   }
 
-  private void addArrowIconCasing() {
-    Bitmap arrowIconCasing = MapImageUtils.getBitmapFromDrawable(ContextCompat.getDrawable(mapView.getContext(),
-      R.drawable.ic_arrow_casing));
-    mapboxMap.addImage(ARROW_ICON_CASING, arrowIconCasing);
+  private void addArrowHeadIconCasing() {
+    Drawable headCasing = DrawableCompat.wrap(ContextCompat.getDrawable(mapView.getContext(),
+      R.drawable.ic_arrow_head_casing));
+    DrawableCompat.setTint(headCasing.mutate(), arrowBorderColor);
+    Bitmap icon = MapImageUtils.getBitmapFromDrawable(headCasing);
+    mapboxMap.addImage(ARROW_HEAD_ICON_CASING, icon);
   }
 
-  private LineLayer createShaftLayer() {
-    return new LineLayer(SHAFT_LINE_LAYER_ID, SHAFT_SOURCE_ID).withProperties(
-      PropertyFactory.lineColor(Color.parseColor(WHITE_HEX)),
+  private LineLayer createArrowShaftLayer() {
+    return new LineLayer(ARROW_SHAFT_LINE_LAYER_ID, ARROW_SHAFT_SOURCE_ID).withProperties(
+      PropertyFactory.lineColor(color(arrowColor)),
       PropertyFactory.lineWidth(
         interpolate(linear(), zoom(),
-          stop(10, product(SHAFT_LINE_WIDTH_FACTOR, 1)),
-          stop(13, product(SHAFT_LINE_WIDTH_FACTOR, 2)),
-          stop(16, product(SHAFT_LINE_WIDTH_FACTOR, 3)),
-          stop(19, product(SHAFT_LINE_WIDTH_FACTOR, 4)),
-          stop(22, product(SHAFT_LINE_WIDTH_FACTOR, 5))
+          stop(10, product(ARROW_SHAFT_LINE_WIDTH_FACTOR, 1)),
+          stop(13, product(ARROW_SHAFT_LINE_WIDTH_FACTOR, 2)),
+          stop(16, product(ARROW_SHAFT_LINE_WIDTH_FACTOR, 3)),
+          stop(19, product(ARROW_SHAFT_LINE_WIDTH_FACTOR, 4)),
+          stop(22, product(ARROW_SHAFT_LINE_WIDTH_FACTOR, 5))
         )
       ),
       PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
@@ -528,16 +533,16 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
     );
   }
 
-  private LineLayer createShaftCasingLayer() {
-    return new LineLayer(SHAFT_CASING_LINE_LAYER_ID, SHAFT_SOURCE_ID).withProperties(
-      PropertyFactory.lineColor(Color.parseColor(DARK_BLUE_GRAY_HEX)),
+  private LineLayer createArrowShaftCasingLayer() {
+    return new LineLayer(ARROW_SHAFT_CASING_LINE_LAYER_ID, ARROW_SHAFT_SOURCE_ID).withProperties(
+      PropertyFactory.lineColor(color(arrowBorderColor)),
       PropertyFactory.lineWidth(
         interpolate(linear(), zoom(),
-          stop(10, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 1)),
-          stop(13, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 2)),
-          stop(16, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 3)),
-          stop(19, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 4)),
-          stop(22, product(SHAFT_CASING_LINE_WIDTH_FACTOR, 5))
+          stop(10, product(ARROW_SHAFT_CASING_LINE_WIDTH_FACTOR, 1)),
+          stop(13, product(ARROW_SHAFT_CASING_LINE_WIDTH_FACTOR, 2)),
+          stop(16, product(ARROW_SHAFT_CASING_LINE_WIDTH_FACTOR, 3)),
+          stop(19, product(ARROW_SHAFT_CASING_LINE_WIDTH_FACTOR, 4)),
+          stop(22, product(ARROW_SHAFT_CASING_LINE_WIDTH_FACTOR, 5))
         )
       ),
       PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
@@ -546,54 +551,54 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
     );
   }
 
-  private SymbolLayer createArrowLayer() {
-    return new SymbolLayer(ARROW_LAYER_ID, ARROW_SOURCE_ID)
+  private SymbolLayer createArrowHeadLayer() {
+    return new SymbolLayer(ARROW_HEAD_LAYER_ID, ARROW_HEAD_SOURCE_ID)
       .withProperties(
-        PropertyFactory.iconImage(ARROW_ICON),
+        PropertyFactory.iconImage(ARROW_HEAD_ICON),
         iconAllowOverlap(true),
         iconIgnorePlacement(true),
         PropertyFactory.iconSize(interpolate(linear(), zoom(),
-          stop(10, product(ARROW_SIZE_FACTOR, 1)),
-          stop(13, product(ARROW_SIZE_FACTOR, 2)),
-          stop(16, product(ARROW_SIZE_FACTOR, 3)),
-          stop(19, product(ARROW_SIZE_FACTOR, 4)),
-          stop(22, product(ARROW_SIZE_FACTOR, 5))
+          stop(10, product(ARROW_HEAD_SIZE_FACTOR, 1)),
+          stop(13, product(ARROW_HEAD_SIZE_FACTOR, 2)),
+          stop(16, product(ARROW_HEAD_SIZE_FACTOR, 3)),
+          stop(19, product(ARROW_HEAD_SIZE_FACTOR, 4)),
+          stop(22, product(ARROW_HEAD_SIZE_FACTOR, 5))
           )
         ),
-        PropertyFactory.iconOffset(ARROW_OFFSET),
+        PropertyFactory.iconOffset(ARROW_HEAD_OFFSET),
         PropertyFactory.iconRotationAlignment(ICON_ROTATION_ALIGNMENT_MAP),
-        PropertyFactory.iconRotate(get(BEARING_ARROW)),
+        PropertyFactory.iconRotate(get(ARROW_BEARING)),
         PropertyFactory.visibility(NONE)
       );
   }
 
-  private SymbolLayer createArrowCasingLayer() {
-    return new SymbolLayer(ARROW_CASING_LAYER_ID, ARROW_SOURCE_ID).withProperties(
-      PropertyFactory.iconImage(ARROW_ICON_CASING),
+  private SymbolLayer createArrowHeadCasingLayer() {
+    return new SymbolLayer(ARROW_HEAD_CASING_LAYER_ID, ARROW_HEAD_SOURCE_ID).withProperties(
+      PropertyFactory.iconImage(ARROW_HEAD_ICON_CASING),
       iconAllowOverlap(true),
       iconIgnorePlacement(true),
       PropertyFactory.iconSize(interpolate(
         linear(), zoom(),
-        stop(10, product(ARROW_CASING_SIZE_FACTOR, 1)),
-        stop(13, product(ARROW_CASING_SIZE_FACTOR, 2)),
-        stop(16, product(ARROW_CASING_SIZE_FACTOR, 3)),
-        stop(19, product(ARROW_CASING_SIZE_FACTOR, 4)),
-        stop(22, product(ARROW_CASING_SIZE_FACTOR, 5))
+        stop(10, product(ARROW_HEAD_CASING_SIZE_FACTOR, 1)),
+        stop(13, product(ARROW_HEAD_CASING_SIZE_FACTOR, 2)),
+        stop(16, product(ARROW_HEAD_CASING_SIZE_FACTOR, 3)),
+        stop(19, product(ARROW_HEAD_CASING_SIZE_FACTOR, 4)),
+        stop(22, product(ARROW_HEAD_CASING_SIZE_FACTOR, 5))
       )),
-      PropertyFactory.iconOffset(ARROW_CASING_OFFSET),
+      PropertyFactory.iconOffset(ARROW_HEAD_CASING_OFFSET),
       PropertyFactory.iconRotationAlignment(ICON_ROTATION_ALIGNMENT_MAP),
-      PropertyFactory.iconRotate(get(BEARING_ARROW)),
+      PropertyFactory.iconRotate(get(ARROW_BEARING)),
       PropertyFactory.visibility(NONE)
     );
   }
 
-  private void initializeArrowLayers(LineLayer shaftLayer, LineLayer shaftCasingLayer, SymbolLayer arrowLayer,
-                                     SymbolLayer arrowCasingLayer) {
+  private void initializeArrowLayers(LineLayer shaftLayer, LineLayer shaftCasingLayer, SymbolLayer headLayer,
+                                     SymbolLayer headCasingLayer) {
     arrowLayers = new ArrayList<>();
     arrowLayers.add(shaftCasingLayer);
     arrowLayers.add(shaftLayer);
-    arrowLayers.add(arrowCasingLayer);
-    arrowLayers.add(arrowLayer);
+    arrowLayers.add(headCasingLayer);
+    arrowLayers.add(headLayer);
   }
 
   /**
@@ -748,6 +753,11 @@ public class NavigationMapRoute implements ProgressChangeListener, MapView.OnMap
       R.styleable.NavigationMapRoute_originWaypointIcon, R.drawable.ic_route_origin);
     destinationWaypointIcon = typedArray.getResourceId(
       R.styleable.NavigationMapRoute_destinationWaypointIcon, R.drawable.ic_route_destination);
+
+    arrowColor = typedArray.getColor(R.styleable.NavigationMapRoute_upcomingManeuverArrowColor,
+      ContextCompat.getColor(context, R.color.mapbox_navigation_route_upcoming_maneuver_arrow_color));
+    arrowBorderColor = typedArray.getColor(R.styleable.NavigationMapRoute_upcomingManeuverArrowBorderColor,
+      ContextCompat.getColor(context, R.color.mapbox_navigation_route_upcoming_maneuver_arrow_border_color));
 
     typedArray.recycle();
   }
