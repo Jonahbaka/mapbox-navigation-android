@@ -21,6 +21,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 
+import com.mapbox.android.gestures.MoveGestureDetector;
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.annotations.Icon;
@@ -88,9 +89,19 @@ public class NavigationView extends CoordinatorLayout implements LifecycleObserv
   private NavigationCamera camera;
   private LocationLayerPlugin locationLayer;
   private OnNavigationReadyCallback onNavigationReadyCallback;
-  private MapboxMap.OnScrollListener onScrollListener = new MapboxMap.OnScrollListener() {
+  private MapboxMap.OnMoveListener onMoveListener = new MapboxMap.OnMoveListener() {
     @Override
-    public void onScroll() {
+    public void onMoveBegin(MoveGestureDetector detector) {
+      // Intentionally empty
+    }
+
+    @Override
+    public void onMove(MoveGestureDetector detector) {
+      // Intentionally empty
+    }
+
+    @Override
+    public void onMoveEnd(MoveGestureDetector detector) {
       if (summaryBehavior.getState() != BottomSheetBehavior.STATE_HIDDEN) {
         navigationPresenter.onMapScroll();
       }
@@ -363,7 +374,7 @@ public class NavigationView extends CoordinatorLayout implements LifecycleObserv
   public void startNavigation(NavigationViewOptions options) {
     if (!isInitialized) {
       initializeClickListeners();
-      map.addOnScrollListener(onScrollListener);
+      map.addOnMoveListener(onMoveListener);
       initializeSummaryBottomSheet();
       establish(options);
       navigationViewModel.initializeNavigation(options);
@@ -390,7 +401,7 @@ public class NavigationView extends CoordinatorLayout implements LifecycleObserv
     locationLayer.setLocationLayerEnabled(false);
     mapRoute.removeRoute();
     clearMarkers();
-    map.removeOnScrollListener(onScrollListener);
+    map.removeOnMoveListener(onMoveListener);
   }
 
   /**
